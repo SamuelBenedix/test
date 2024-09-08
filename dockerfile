@@ -1,21 +1,23 @@
-# Menggunakan image PHP resmi sebagai base image
+# Use the official PHP image as a base
 FROM php:8.0-fpm
 
-# Install dependensi sistem
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
- libpng-dev \
- libjpeg-dev \
- libfreetype6-dev \
- libzip-dev \
- unzip \
- libonig-dev \
- libcurl4-openssl-dev \
- libxml2-dev \
- git
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    git \
+    curl
 
-# Install ekstensi PHP
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install gd zip pdo pdo_mysql
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo mbstring exif pcntl bcmath gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -23,14 +25,12 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy aplikasi Laravel
-COPY . .
+# Copy existing application directory contents
+COPY . /var/www
 
-# Install dependensi PHP dengan Composer
-RUN composer install
+# Copy existing application directory permissions
+RUN chown -R www-data:www-data /var/www
 
-# Expose port yang digunakan oleh PHP-FPM
+# Expose port 9000 and start php-fpm server
 EXPOSE 9000
-
-# Jalankan PHP-FPM
 CMD ["php-fpm"]
